@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello HomeController!{% endblock %}
+
+{% block body %}
+    <form action="{{ path('app_find_by_word') }}" method="get">
+        <label for="inputEmail">Buscador</label>
+        <input type="text" name="word" required autofocus>
+        <button style="margin-top: 30px;" class="btn btn-lg btn-primary" type="submit">
+            Buscar
+        </button>
+    </form>
+{% endblock %}
