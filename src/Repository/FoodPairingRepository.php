@@ -23,7 +23,7 @@ class FoodPairingRepository extends ServiceEntityRepository
     //  * @return FoodPairing[] Returns an array of FoodPairing objects
     //  */
     
-    public function findByExampleField($value)
+    public function findByNameField($value)
     {
         return $this->createQueryBuilder('f')
             ->andWhere('f.name LIKE :val')

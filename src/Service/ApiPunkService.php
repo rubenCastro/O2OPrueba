@@ -8,11 +8,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Doctrine\ORM\EntityManagerInterface;
+
 use App\Repository\FoodPairingRepository;
 use App\Repository\BeersRepository;
 
 use App\Entity\Beers;
 use App\Entity\FoodPairing;
+
+use App\Exception\ApiException;
 
 class ApiPunkService 
 {
@@ -33,7 +36,13 @@ class ApiPunkService
     {
         $output = [];
 
-        $foodPairings = $this->foodPairingRepository->findByExampleField($text);
+        if (empty($text)) {
+            throw (new ApiException('Error'))
+                ->withPublicMessage('No se ha enviado el parametro de búsqueda')
+                ->withHttpStatus(400);
+        }
+
+        $foodPairings = $this->foodPairingRepository->findByNameField($text);
         foreach($foodPairings as $foodPairing){
             $beers = $foodPairing->getBeers();
             $this->parseBeers($beers, $output);
@@ -41,7 +50,7 @@ class ApiPunkService
         return $output;
     }
 
-    public function showAll()
+    public function showAllBeers()
     {
         $output = [];
 
@@ -51,7 +60,28 @@ class ApiPunkService
         return $output;
     }
 
-    public function showAllFromApi()
+    public function getBeer($id)
+    {
+        $output = [];
+
+        if(!$id || !is_numeric($id)){
+            throw (new ApiException('Error'))
+                ->withPublicMessage('No se enviaron los datos correctamente')
+                ->withHttpStatus(400);
+        }
+
+        $beer = $this->beersRepository->find($id);
+        
+        if(!$beer){
+            throw (new ApiException('Error'))
+                ->withPublicMessage('No se encontró esa cerveza')
+                ->withHttpStatus(400);
+        }
+        $output = $beer->toArray();
+        return $output;
+    }
+
+    public function showAllBeersFromApi()
     {
         $response = $this->client->request(
             'GET',
@@ -71,14 +101,14 @@ class ApiPunkService
 
     public function saveDatabaseFromApi()
     {
-        $dataApi = json_decode($this->showAllFromApi(), true);
+        $dataApi = json_decode($this->showAllBeersFromApi(), true);
         foreach($dataApi as $beer){
+            if(!isset($beer['id']) || !isset($beer['name']) || !isset($beer['description']) || !isset($beer['image_url']) || !isset($beer['tagline'])){
+                throw new \Exception("Faltan datos");
+            }
             $beerObj = $this->beersRepository->find($beer['id']);
             if(!$beerObj){
                 $beerObj = new Beers();
-            }
-            if(!isset($beer['id']) || !isset($beer['name']) || !isset($beer['description']) || !isset($beer['image_url']) || !isset($beer['tagline'])){
-                throw new \Exception("Faltan datos");
             }
             $beerObj->setId($beer['id']);
             $beerObj->setName($beer['name']);
