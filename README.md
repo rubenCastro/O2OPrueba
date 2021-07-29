@@ -1,6 +1,7 @@
 # O2O
 
 He creado 3 endpoints:
+
     - Obtención de una cerveza pasandole una Id.
     - Obteniendo todas las cervezas disponibles.
     - Obteniendo las cervezas filtrando por un texto.
