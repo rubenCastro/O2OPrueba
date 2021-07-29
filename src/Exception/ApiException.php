@@ -7,10 +7,6 @@ class ApiException extends \Exception
     private $publicMessage = '';
     private $httpStatus = 500;
 
-    /*
-        throw (new ApiException('error')->withPublicMessage('Un mensaje mas humano')->withHttpStatus(400));
-    */
-
     public function withPublicMessage(string $message): self
     {
         $this->publicMessage = $message;

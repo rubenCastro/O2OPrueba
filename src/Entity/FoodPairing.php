@@ -75,7 +75,8 @@ class FoodPairing
         return $this;
     }
 
-    public function toArray(){
+    public function toArray()
+    {
         return array(
             'id' => $this->getId(),
             'name' => $this->getName()

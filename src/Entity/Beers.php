@@ -153,9 +153,10 @@ class Beers
         return $this;
     }
 
-    public function toArray(){
+    public function toArray()
+    {
         $foods = array();
-        foreach($this->getFoodPairings() as $food){
+        foreach($this->getFoodPairings() as $food) {
             $foods[] = $food->toArray();
         }
         return array(

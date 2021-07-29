@@ -8,9 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-
 use App\Repository\BeersRepository;
-
 use App\Service\ApiPunkService;
 
 class ApiController extends AbstractController

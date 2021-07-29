@@ -8,13 +8,10 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Doctrine\ORM\EntityManagerInterface;
-
 use App\Repository\FoodPairingRepository;
 use App\Repository\BeersRepository;
-
 use App\Entity\Beers;
 use App\Entity\FoodPairing;
-
 use App\Exception\ApiException;
 
 class ApiPunkService 
@@ -23,13 +20,15 @@ class ApiPunkService
     private $foodPairingRepository;
     private $beersRepository;
     private $em;
+    private $endpoint;
 
-    public function __construct(HttpClientInterface $client, EntityManagerInterface $em, FoodPairingRepository $foodPairingRepository, BeersRepository $beersRepository)
+    public function __construct(string $apiEndpoint, HttpClientInterface $client, EntityManagerInterface $em, FoodPairingRepository $foodPairingRepository, BeersRepository $beersRepository)
     {
         $this->client = $client;
         $this->em = $em;
         $this->foodPairingRepository = $foodPairingRepository;
         $this->beersRepository = $beersRepository;
+        $this->endpoint = $apiEndpoint;
     }
 
     public function searchByFood($text)
@@ -38,12 +37,12 @@ class ApiPunkService
 
         if (empty($text)) {
             throw (new ApiException('Error'))
-                ->withPublicMessage('No se ha enviado el parametro de búsqueda')
+                ->withPublicMessage('Search parameter has not been sent')
                 ->withHttpStatus(400);
         }
 
         $foodPairings = $this->foodPairingRepository->findByNameField($text);
-        foreach($foodPairings as $foodPairing){
+        foreach($foodPairings as $foodPairing) {
             $beers = $foodPairing->getBeers();
             $this->parseBeers($beers, $output);
         }
@@ -64,9 +63,9 @@ class ApiPunkService
     {
         $output = [];
 
-        if(!$id || !is_numeric($id)){
+        if(!$id || !is_numeric($id)) {
             throw (new ApiException('Error'))
-                ->withPublicMessage('No se enviaron los datos correctamente')
+                ->withPublicMessage('Data not sent correctly')
                 ->withHttpStatus(400);
         }
 
@@ -74,7 +73,7 @@ class ApiPunkService
         
         if(!$beer){
             throw (new ApiException('Error'))
-                ->withPublicMessage('No se encontró esa cerveza')
+                ->withPublicMessage('Beer not found')
                 ->withHttpStatus(400);
         }
         $output = $beer->toArray();
@@ -85,7 +84,7 @@ class ApiPunkService
     {
         $response = $this->client->request(
             'GET',
-            'https://api.punkapi.com/v2/beers'
+            $this->endpoint
         );
 
         return $response->getContent();
@@ -102,25 +101,27 @@ class ApiPunkService
     public function saveDatabaseFromApi()
     {
         $dataApi = json_decode($this->showAllBeersFromApi(), true);
-        foreach($dataApi as $beer){
-            if(!isset($beer['id']) || !isset($beer['name']) || !isset($beer['description']) || !isset($beer['image_url']) || !isset($beer['tagline'])){
-                throw new \Exception("Faltan datos");
+        foreach($dataApi as $beer) {
+            if(!isset($beer['id'], $beer['name'], $beer['description'], $beer['image_url'], $beer['tagline'])) {
+                throw (new ApiException('Error'))
+                ->withPublicMessage('Data not sent correctly')
+                ->withHttpStatus(400);
             }
             $beerObj = $this->beersRepository->find($beer['id']);
             if(!$beerObj){
                 $beerObj = new Beers();
             }
-            $beerObj->setId($beer['id']);
-            $beerObj->setName($beer['name']);
-            $beerObj->setDescription($beer['description']);
-            $beerObj->setImage($beer['image_url']);
-            $beerObj->setSlogan($beer['tagline']);
             $date=date_create_from_format("m/Y",$beer['first_brewed']);
-            $beerObj->setFirstBrewed($date);
+            $beerObj->setId($beer['id'])
+                ->setName($beer['name'])
+                ->setDescription($beer['description'])
+                ->setImage($beer['image_url'])
+                ->setSlogan($beer['tagline'])
+                ->setFirstBrewed($date);
 
-            foreach($beer['food_pairing'] as $food){
+            foreach($beer['food_pairing'] as $food) {
                 $foodObj = $this->foodPairingRepository->findOneBy(array('name' => $food));
-                if(!$foodObj){
+                if(!$foodObj) {
                     $foodObj = new FoodPairing();
                 }
                 $foodObj->setName($food);

@@ -9,18 +9,6 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ClientException;
-use Hautelook\AliceBundle\PhpUnit\RecreateDatabaseTrait;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
-
-use App\Repository\FoodPairingRepository;
-use App\Repository\BeersRepository;
-
-use App\Entity\Beers;
-use App\Entity\FoodPairing;
-
-use App\Service\ApiPunkService;
 
 use App\Exception\ApiException;
 
@@ -63,20 +51,18 @@ class ApiTest extends TestCase
         $this->assertEquals($response->getStatusCode(), 200);
     }
 
-    public function testSearchByIdNonId(): void
-    {
-        $id = "";
-        $this->expectException(\Exception::class);
-        $response = $this->client->request('GET', 'http://localhost:8000/beer/' . $id);
-        $this->assertEquals($response->getStatusCode(), 200);
-    }
-
     public function testSearchByIdNonNumericId(): void
     {
         $id = "supercalifragilistico";
         $this->expectException(\Exception::class);
         $response = $this->client->request('GET', 'http://localhost:8000/beer/' . $id);
-        $this->assertEquals($response->getStatusCode(), 200);
+    }
+
+    public function testSearchByIdNonExistingId(): void
+    {
+        $id = 1111111;
+        $this->expectException(\Exception::class);
+        $response = $this->client->request('GET', 'http://localhost:8000/beer/' . $id);
     }
 
     public function testSearchById(): void

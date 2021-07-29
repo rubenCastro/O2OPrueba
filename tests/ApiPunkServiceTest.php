@@ -3,25 +3,14 @@
 namespace App\Tests;
 
 use PHPUnit\Framework\TestCase;
-use GuzzleHttp\Psr7;
-use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Exception\ClientException;
-use Hautelook\AliceBundle\PhpUnit\RecreateDatabaseTrait;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
-
 use App\Repository\FoodPairingRepository;
 use App\Repository\BeersRepository;
-
 use App\Entity\Beers;
 use App\Entity\FoodPairing;
-
 use App\Service\ApiPunkService;
-
 use App\Exception\ApiException;
 
 class ApiPunkServiceTest extends TestCase
@@ -30,6 +19,7 @@ class ApiPunkServiceTest extends TestCase
     private $em;
     private $foodPairingRepository;
     private $beersRepository;
+    private $endpointApi;
 
     public function setUp(): void
     {
@@ -37,22 +27,23 @@ class ApiPunkServiceTest extends TestCase
         $this->em = $this->createMock(EntityManagerInterface::class);
         $this->foodPairingRepository = $this->createMock(FoodPairingRepository::class);
         $this->beersRepository = $this->createMock(BeersRepository::class);
+        $this->endpointApi = "https://api.punkapi.com/v2/beers";
     }
 
     public function testShowAllBeers(): void 
     {
         $beer = new Beers();
-        $beer->setId(99);
-        $beer->setName('prueba');
-        $beer->setDescription('lorem ipsum');
-        $beer->setImage('https://images.punkapi.com/v2/keg.png');
-        $beer->setSlogan('lorem ipsum');
-        $beer->setFirstBrewed(new \Datetime());
+        $beer->setId(99)
+            ->setName('prueba')
+            ->setDescription('lorem ipsum')
+            ->setImage('https://images.punkapi.com/v2/keg.png')
+            ->setSlogan('lorem ipsum')
+            ->setFirstBrewed(new \Datetime());
 
         $this->beersRepository->method('findAll')
                               ->willReturn(array($beer));
         
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $output = $apiPunkService->showAllBeers();
         $this->assertEquals(!empty($output), true);
     }
@@ -70,7 +61,7 @@ class ApiPunkServiceTest extends TestCase
                          ->with('GET','https://api.punkapi.com/v2/beers')
                          ->willReturn($mockResponse);
         
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $output = $apiPunkService->showAllBeersFromApi();
         $this->assertEquals(!empty($output), true);
     }
@@ -79,7 +70,7 @@ class ApiPunkServiceTest extends TestCase
     {
         $word = "";
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $this->expectException(ApiException::class);
         $output = $apiPunkService->searchByFood($word);
     }
@@ -91,7 +82,7 @@ class ApiPunkServiceTest extends TestCase
         $this->foodPairingRepository->method('findByNameField')
                                     ->willReturn(array());
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $output = $apiPunkService->searchByFood($word);
         $this->assertEquals(empty($output), true);
     }
@@ -101,12 +92,12 @@ class ApiPunkServiceTest extends TestCase
         $word = "lemon";
 
         $beer = new Beers();
-        $beer->setId(99);
-        $beer->setName('prueba');
-        $beer->setDescription('lorem ipsum');
-        $beer->setImage('https://images.punkapi.com/v2/keg.png');
-        $beer->setSlogan('lorem ipsum');
-        $beer->setFirstBrewed(new \Datetime());
+        $beer->setId(99)
+            ->setName('prueba')
+            ->setDescription('lorem ipsum')
+            ->setImage('https://images.punkapi.com/v2/keg.png')
+            ->setSlogan('lorem ipsum')
+            ->setFirstBrewed(new \Datetime());
 
         $food = new FoodPairing();
         $food->setName("lemon spicy");
@@ -117,7 +108,7 @@ class ApiPunkServiceTest extends TestCase
         $this->foodPairingRepository->method('findByNameField')
                                     ->willReturn(array($food));
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $output = $apiPunkService->searchByFood($word);
         $this->assertEquals(!empty($output), true);
     }
@@ -135,7 +126,7 @@ class ApiPunkServiceTest extends TestCase
                          ->with('GET','https://api.punkapi.com/v2/beers')
                          ->willReturn($mockResponse);
         
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $this->expectException(\Exception::class);
         $output = $apiPunkService->saveDatabaseFromApi();
     }
@@ -154,12 +145,13 @@ class ApiPunkServiceTest extends TestCase
                          ->willReturn($mockResponse);
         
         $beer = new Beers();
-        $beer->setId(99);
-        $beer->setName('prueba');
-        $beer->setDescription('lorem ipsum');
-        $beer->setImage('https://images.punkapi.com/v2/keg.png');
-        $beer->setSlogan('lorem ipsum');
-        $beer->setFirstBrewed(new \Datetime());
+        $beer->setId(99)
+            ->setName('prueba')
+            ->setDescription('lorem ipsum')
+            ->setImage('https://images.punkapi.com/v2/keg.png')
+            ->setSlogan('lorem ipsum')
+            ->setFirstBrewed(new \Datetime());
+
         $this->beersRepository->method('find')
                               ->willReturn($beer);
         
@@ -169,7 +161,7 @@ class ApiPunkServiceTest extends TestCase
         $this->foodPairingRepository->method('findOneBy')
                                     ->willReturn($food);
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $apiPunkService->saveDatabaseFromApi();
 
         $this->assertEquals(true, true);
@@ -194,7 +186,7 @@ class ApiPunkServiceTest extends TestCase
         $this->foodPairingRepository->method('findOneBy')
                                     ->willReturn(null);
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $apiPunkService->saveDatabaseFromApi();
 
         $this->assertEquals(true, true);
@@ -213,7 +205,7 @@ class ApiPunkServiceTest extends TestCase
      */
     public function testGetBeerWrongData($id): void 
     {
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $this->expectException(ApiException::class);
         $apiPunkService->getBeer($id);
     }
@@ -224,7 +216,7 @@ class ApiPunkServiceTest extends TestCase
         $this->beersRepository->method('find')
                               ->willReturn(null);
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $this->expectException(ApiException::class);
         $apiPunkService->getBeer($id);
     }
@@ -233,12 +225,12 @@ class ApiPunkServiceTest extends TestCase
     {
         $id = 1;
         $beer = new Beers();
-        $beer->setId(99);
-        $beer->setName('prueba');
-        $beer->setDescription('lorem ipsum');
-        $beer->setImage('https://images.punkapi.com/v2/keg.png');
-        $beer->setSlogan('lorem ipsum');
-        $beer->setFirstBrewed(new \Datetime());
+        $beer->setId(99)
+            ->setName('prueba')
+            ->setDescription('lorem ipsum')
+            ->setImage('https://images.punkapi.com/v2/keg.png')
+            ->setSlogan('lorem ipsum')
+            ->setFirstBrewed(new \Datetime());
 
         $food = new FoodPairing();
         $food->setName("lemon spicy");
@@ -248,7 +240,7 @@ class ApiPunkServiceTest extends TestCase
         $this->beersRepository->method('find')
                               ->willReturn($beer);
 
-        $apiPunkService = new ApiPunkService($this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
+        $apiPunkService = new ApiPunkService($this->endpointApi, $this->httpClient, $this->em, $this->foodPairingRepository, $this->beersRepository);
         $output = $apiPunkService->getBeer($id);
 
         $this->assertEquals(!empty($output), true);
